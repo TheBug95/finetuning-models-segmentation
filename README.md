@@ -47,3 +47,22 @@ métodos de entrenamiento.
 
 Los modelos y el procesador resultante se guardan en un directorio con el
 formato `finetuned-<modelo>-<metodo>-<dataset>`.
+
+## Gestión de modelos
+
+Para descargar e instalar los pesos oficiales de las distintas variantes de
+SAM, MobileSAM, HQ-SAM y MedSAM(+2) se incluye el módulo
+`model_manager.py`. Este expone la clase `SAMModelManager`, que automatiza la
+instalación de los repositorios y la obtención de los checkpoints.
+
+Ejemplo de uso:
+
+```python
+from model_manager import SAMModelManager
+
+mgr = SAMModelManager("Models")
+ckpt_path = mgr.setup("mobilesam", "vit_t")
+```
+
+Los archivos descargados se guardarán dentro del directorio indicado (en el
+ejemplo, `Models`).

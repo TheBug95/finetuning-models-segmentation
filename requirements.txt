@@ -5,3 +5,5 @@ peft
 bitsandbytes
 Pillow
 pycocotools
+huggingface_hub
+requests
