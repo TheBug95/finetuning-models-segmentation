@@ -7,7 +7,9 @@ Repositorio para probar finetuning de modelos de segmentacion usando lora/qlora.
 El script `finetune.py` permite ajustar modelos tipo SAM2, MedSAM2 y MobileSAM
 sobre los datasets de catarata y retinopatía diabética.
 
-Los datasets deben tener la siguiente estructura:
+Los datasets pueden estar organizados de dos maneras:
+
+1. Directorios separados de imágenes y máscaras binaras:
 
 ```
 <root>/
@@ -16,6 +18,23 @@ Los datasets deben tener la siguiente estructura:
     masks/
         xxx.png
 ```
+
+2. Formato COCO (por ejemplo exportado desde Roboflow), donde cada división
+contiene todas las imágenes y un archivo `_annotations.coco.json`:
+
+```
+<root>/
+    train/
+        _annotations.coco.json
+        img1.png
+        ...
+    valid/
+        _annotations.coco.json
+        ...
+```
+
+En este caso, proporcione la ruta del subconjunto deseado (`train`, `valid`,
+etc.) mediante el parámetro `--dataset-root`.
 
 Ejemplo de ejecución:
 
