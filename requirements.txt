@@ -1,9 +1,20 @@
-torch
-torchvision
-transformers
-peft
-bitsandbytes
-Pillow
-pycocotools
-huggingface_hub
-requests
+# Core ML libraries
+torch>=2.0.0
+torchvision>=0.15.0
+transformers>=4.35.0
+
+# Fine-tuning libraries
+peft>=0.6.0
+bitsandbytes>=0.41.0
+
+# Data processing
+Pillow>=9.0.0
+pycocotools>=2.0.6
+numpy>=1.21.0
+
+# Model management
+huggingface_hub>=0.16.0
+requests>=2.28.0
+
+# Optional accelerated training
+accelerate>=0.21.0

@@ -2,6 +2,7 @@ from pathlib import Path
 import subprocess
 import sys
 import re
+import pkg_resources
 from huggingface_hub import hf_hub_download
 
 
@@ -19,7 +20,6 @@ class SAMModelManager:
             },
         },
         # 2) MobileSAM --------------------------------------------------------
-        #   *Peso oficial en HF: repo «dhkim2810/MobileSAM», archivo mobile_sam.pt*
         "mobilesam": {
             "pip": "git+https://github.com/ChaoningZhang/MobileSAM.git",
             "variants": {
@@ -53,14 +53,29 @@ class SAMModelManager:
 
     # ---------------------------- API pública ------------------------------
     def install_repo(self, family: str) -> None:
+        """Install the repository for a model family."""
+        if family not in self._MODELS:
+            raise ValueError(f"Unknown model family: {family}. Available: {list(self._MODELS.keys())}")
+        
         pkg = self._MODELS[family]["pip"]
         if not self._pkg_installed(pkg):
             print(f"Instalando {family}…")
-            subprocess.check_call([sys.executable, "-m", "pip", "install", pkg])
+            try:
+                subprocess.check_call([sys.executable, "-m", "pip", "install", pkg])
+            except subprocess.CalledProcessError as e:
+                raise RuntimeError(f"Failed to install {family}: {e}")
         else:
             print(f"{family} ya estaba instalado.")
 
     def download_variant(self, family: str, variant: str, force: bool = False) -> Path:
+        """Download a specific variant of a model family."""
+        if family not in self._MODELS:
+            raise ValueError(f"Unknown model family: {family}")
+        
+        if variant not in self._MODELS[family]["variants"]:
+            available = list(self._MODELS[family]["variants"].keys())
+            raise ValueError(f"Unknown variant {variant} for {family}. Available: {available}")
+        
         repo_or_url, filename = self._MODELS[family]["variants"][variant]
         dest = self.root / Path(filename).name
 
@@ -68,41 +83,47 @@ class SAMModelManager:
             print(f"{dest.name} ya existe → se omite descarga.")
             return dest
 
-        if repo_or_url == "url" or repo_or_url.startswith("http"):
-            import requests
-
-            url = filename if repo_or_url == "url" else repo_or_url
-            print(f"Descargando desde URL directa:\n  {url}")
-            with requests.get(url, stream=True) as r:
-                r.raise_for_status()
-                with open(dest, "wb") as f:
-                    for chunk in r.iter_content(chunk_size=8192):
-                        f.write(chunk)
-        else:
-            print(f"Descargando desde Hugging Face ({repo_or_url})…")
-            dest_path = hf_hub_download(
-                repo_id=repo_or_url,
-                filename=filename,
-                cache_dir=str(self.root),
-                force_download=force,
-            )
-            dest = Path(dest_path)
+        try:
+            if repo_or_url == "url" or repo_or_url.startswith("http"):
+                import requests
+                
+                url = filename if repo_or_url == "url" else repo_or_url
+                print(f"Descargando desde URL directa:\n  {url}")
+                with requests.get(url, stream=True) as r:
+                    r.raise_for_status()
+                    with open(dest, "wb") as f:
+                        for chunk in r.iter_content(chunk_size=8192):
+                            f.write(chunk)
+            else:
+                print(f"Descargando desde Hugging Face ({repo_or_url})…")
+                dest_path = hf_hub_download(
+                    repo_id=repo_or_url,
+                    filename=filename,
+                    cache_dir=str(self.root),
+                    force_download=force,
+                )
+                dest = Path(dest_path)
+        except Exception as e:
+            raise RuntimeError(f"Failed to download {family}/{variant}: {e}")
 
         return dest
 
     def setup(self, family: str, variant: str, install: bool = True, force: bool = False) -> Path:
+        """Complete setup: install repository and download model variant."""
         if install:
             self.install_repo(family)
         return self.download_variant(family, variant, force)
 
     def list_supported(self) -> None:
+        """Print all supported model families and their variants."""
+        print("Supported models:")
         for fam, info in self._MODELS.items():
-            print(f"{fam}: {', '.join(info['variants'])}")
+            variants = ', '.join(info['variants'].keys())
+            print(f"  {fam}: {variants}")
 
     @staticmethod
     def _pkg_installed(pip_spec: str) -> bool:
-        import pkg_resources
-
+        """Check if a pip package is installed."""
         name = re.sub(r".*/|\.git$", "", pip_spec)
         try:
             pkg_resources.get_distribution(name)
