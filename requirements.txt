@@ -1,16 +1,17 @@
-# Core ML libraries
+# === PYTORCH SOLO - SIN TENSORFLOW ===
+# Core ML libraries - Solo PyTorch
 torch>=2.0.0
 torchvision>=0.15.0
-transformers>=4.35.0
+transformers[torch]>=4.35.0  # Solo backend PyTorch
 
-# Fine-tuning libraries
+# Fine-tuning libraries 
 peft>=0.6.0
 bitsandbytes>=0.41.0
 
 # Data processing
 Pillow>=9.0.0
 pycocotools>=2.0.6
-numpy>=1.21.0
+numpy<2.0  # Evitar conflictos con TensorFlow
 
 # Model management
 huggingface_hub>=0.16.0
