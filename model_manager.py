@@ -10,7 +10,17 @@ class SAMModelManager:
     """Gestor unificado para SAM, MobileSAM, HQ-SAM/Light-HQ-SAM y MedSAM(+2)."""
 
     _MODELS = {
-        # 1) Segment Anything original ---------------------------------------
+        # 1) SAM2 - Next generation Segment Anything ---------------------------
+        "sam2": {
+            "pip": "git+https://github.com/facebookresearch/segment-anything-2.git",
+            "variants": {
+                "hiera_tiny": ("url", "https://dl.fbaipublicfiles.com/segment_anything_2/072824/sam2_hiera_tiny.pt"),
+                "hiera_small": ("url", "https://dl.fbaipublicfiles.com/segment_anything_2/072824/sam2_hiera_small.pt"),
+                "hiera_base_plus": ("url", "https://dl.fbaipublicfiles.com/segment_anything_2/072824/sam2_hiera_base_plus.pt"),
+                "hiera_large": ("url", "https://dl.fbaipublicfiles.com/segment_anything_2/072824/sam2_hiera_large.pt"),
+            },
+        },
+        # 2) Segment Anything original (para compatibilidad) ------------------
         "sam": {
             "pip": "git+https://github.com/facebookresearch/segment-anything.git",
             "variants": {
@@ -19,30 +29,33 @@ class SAMModelManager:
                 "vit_h": ("url", "https://dl.fbaipublicfiles.com/segment_anything/sam_vit_h_4b8939.pth"),
             },
         },
-        # 2) MobileSAM --------------------------------------------------------
+        # 3) MobileSAM2 - Lightweight version ----------------------------------
+        "mobilesam2": {
+            "pip": "git+https://github.com/ChaoningZhang/MobileSAM.git",
+            "variants": {
+                "vit_t": ("url", "https://github.com/ChaoningZhang/MobileSAM/raw/master/weights/mobile_sam.pt"),
+            },
+        },
+        # 4) MedSAM2 - Medical specialized version -----------------------------
+        "medsam2": {
+            "pip": "git+https://github.com/bowang-lab/MedSAM.git",
+            "variants": {
+                "latest": ("url", "https://huggingface.co/bowang-lab/medsam2/resolve/main/medsam2_latest.pt"),
+                "vit_b": ("url", "https://zenodo.org/records/10689643/files/medsam_vit_b.pth"),
+            },
+        },
+        # 5) Mantener compatibilidad con versiones anteriores -----------------
         "mobilesam": {
             "pip": "git+https://github.com/ChaoningZhang/MobileSAM.git",
             "variants": {
-                "vit_t": ("dhkim2810/MobileSAM", "mobile_sam.pt"),  # 40 MB
+                "vit_t": ("url", "https://github.com/ChaoningZhang/MobileSAM/raw/master/weights/mobile_sam.pt"),
             },
         },
-        # 3) HQ-SAM / Light-HQ-SAM -------------------------------------------
-        "hq_sam": {
-            "pip": "git+https://github.com/SysCV/sam-hq.git",
-            "variants": {
-                "vit_l": ("url", "https://huggingface.co/lkeab/hq-sam/resolve/main/sam_hq_vit_l.pth"),
-                "vit_t": ("url", "https://huggingface.co/lkeab/hq-sam/resolve/main/sam_hq_vit_tiny.pth"),
-                "vit_h": ("url", "https://huggingface.co/lkeab/hq-sam/resolve/main/sam_hq_vit_h.pth"),
-                "vit_b": ("url", "https://huggingface.co/lkeab/hq-sam/resolve/main/sam_hq_vit_b.pth"),
-                "hiera_l_2.1": ("url", "https://huggingface.co/lkeab/hq-sam/resolve/main/sam2.1_hq_hiera_large.pt"),
-            },
-        },
-        # 4) MedSAM y MedSAM2 -------------------------------------------------
         "medsam": {
             "pip": "git+https://github.com/bowang-lab/MedSAM.git",
             "variants": {
                 "medsam1": ("url", "https://zenodo.org/records/10689643/files/medsam_vit_b.pth"),
-                "medsam2_latest": ("url", "https://huggingface.co/wanglab/MedSAM2/resolve/main/MedSAM2_latest.pt"),
+                "medsam2_latest": ("url", "https://huggingface.co/bowang-lab/medsam2/resolve/main/medsam2_latest.pt"),
             },
         },
     }
