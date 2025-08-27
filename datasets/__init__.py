@@ -1,12 +1,24 @@
-from .cataract import build_cataract_dataset
-from .retinopathy import build_retinopathy_dataset
+"""
+Módulo de datasets para segmentación médica.
+Provee datasets limpios y modulares para entrenar modelos SAM.
+"""
 
+from .base_dataset import BaseMedicalDataset
+from .cataract_dataset import CataractDataset
+from .retinopathy_dataset import RetinopathyDataset
+from .dataset_factory import create_dataset, list_available_datasets
 
+__all__ = [
+    'BaseMedicalDataset',
+    'CataractDataset', 
+    'RetinopathyDataset',
+    'create_dataset',
+    'list_available_datasets'
+]
+
+# Función de compatibilidad con código anterior
 def get_dataset(name: str, root: str):
-    """Factory function for available datasets."""
-    name = name.lower()
-    if name == "cataract":
-        return build_cataract_dataset(root)
-    if name in {"retinopathy", "diabetic_retinopathy"}:
-        return build_retinopathy_dataset(root)
-    raise ValueError(f"Unknown dataset: {name}")
+    """Factory function para compatibilidad (deprecated)."""
+    import warnings
+    warnings.warn("get_dataset está deprecated, usa create_dataset", DeprecationWarning)
+    return create_dataset(name, root)
