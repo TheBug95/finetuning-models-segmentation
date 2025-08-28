@@ -1,3 +1,19 @@
+# Large model files (>100MB - GitHub limit)
+*.pt
+*.pth
+*.bin
+*.safetensors
+
+# Model directories that might contain large files
+models/*.pt
+models/*.pth
+models/*.bin
+models/*.safetensors
+
+# Finetuned model outputs
+finetuned-*/
+checkpoints/
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[codz]
