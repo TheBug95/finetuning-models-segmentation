@@ -4,7 +4,7 @@ Implementación del modelo SAM2 usando Hugging Face Transformers.
 
 from typing import Optional, List
 import torch
-from transformers import SamModel, SamProcessor
+from transformers import Sam2Model, Sam2Processor
 from .base_model import BaseSegmentationModel
 
 
@@ -38,7 +38,7 @@ class SAM2Model(BaseSegmentationModel):
     def load_model(self) -> None:
         """Carga el modelo SAM2 desde Hugging Face."""
         try:
-            self.model = SamModel.from_pretrained(
+            self.model = Sam2Model.from_pretrained(
                 self.model_name,
                 cache_dir=self.cache_dir,
                 torch_dtype=torch.float16 if torch.cuda.is_available() else torch.float32
@@ -50,7 +50,7 @@ class SAM2Model(BaseSegmentationModel):
     def load_processor(self) -> None:
         """Carga el procesador SAM2."""
         try:
-            self.processor = SamProcessor.from_pretrained(
+            self.processor = Sam2Processor.from_pretrained(
                 self.model_name,
                 cache_dir=self.cache_dir
             )
@@ -70,14 +70,15 @@ class SAM2Model(BaseSegmentationModel):
             "mask_decoder.transformer.layers.0.self_attn.out_proj"
         ]
         
-    def forward(self, images, input_points=None, input_labels=None):
+    def forward(self, images, input_points=None, input_labels=None, input_boxes=None):
         """
         Forward pass del modelo.
         
         Args:
-            images: Tensor de imágenes
+            images: Tensor de imágenes o lista de imágenes
             input_points: Puntos de entrada opcional
-            input_labels: Etiquetas de puntos opcional
+            input_labels: Etiquetas de puntos opcional 
+            input_boxes: Bounding boxes opcional
             
         Returns:
             Salida del modelo
@@ -87,16 +88,27 @@ class SAM2Model(BaseSegmentationModel):
             
         # Procesar inputs si hay procesador disponible
         if self.processor is not None:
-            inputs = self.processor(
-                images=images,
-                input_points=input_points,
-                input_labels=input_labels,
-                return_tensors="pt"
-            ).to(self.device)
+            # Preparar argumentos para el procesador
+            processor_kwargs = {
+                "images": images,
+                "return_tensors": "pt"
+            }
+            
+            # Agregar inputs opcionales si están disponibles
+            if input_points is not None:
+                processor_kwargs["input_points"] = input_points
+            if input_labels is not None:
+                processor_kwargs["input_labels"] = input_labels
+            if input_boxes is not None:
+                processor_kwargs["input_boxes"] = input_boxes
+                
+            inputs = self.processor(**processor_kwargs).to(self.device)
             return self.model(**inputs)
         else:
-            # Forward directo si no hay procesador
-            return self.model(images)
+            # Forward directo si no hay procesador (solo pixel_values)
+            if hasattr(images, 'to'):
+                images = images.to(self.device)
+            return self.model(pixel_values=images)
             
     @classmethod
     def list_available_variants(cls) -> dict:
