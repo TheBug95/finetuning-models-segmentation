@@ -124,21 +124,19 @@ class MobileSAMModel(BaseSegmentationModel):
             if hasattr(inputs, 'pixel_values'):
                 inputs.pixel_values = inputs.pixel_values.to(model_dtype)
             
-            # Filtrar argumentos problemáticos que causan conflictos
-            filtered_inputs = {}
-            for key, value in inputs.items():
-                if key in ['pixel_values', 'original_sizes', 'reshaped_input_sizes']:
-                    filtered_inputs[key] = value
-                elif key not in ['attention_mask', 'position_ids']:
-                    filtered_inputs[key] = value
-            
             # Intentar forward con argumentos completos primero
             try:
                 return self.model(**inputs)
             except TypeError as e:
-                if "multiple values" in str(e) and ("attention_mask" in str(e) or "position_ids" in str(e)):
-                    # Solo filtrar si hay conflicto confirmado
-                    print("⚠️  Detectado conflicto de argumentos, aplicando filtrado...")
+                if "multiple values" in str(e) and "attention_mask" in str(e):
+                    # Solo filtrar si hay conflicto confirmado de attention_mask
+                    print("⚠️  Detectado conflicto de attention_mask, aplicando filtrado...")
+                    filtered_inputs = self._filter_conflicting_args(inputs)
+                    return self.model(**filtered_inputs)
+                elif "multiple values" in str(e) and "position_ids" in str(e):
+                    # Solo filtrar si hay conflicto confirmado de position_ids
+                    print("⚠️  Detectado conflicto de position_ids, aplicando filtrado...")
+                    filtered_inputs = self._filter_conflicting_args(inputs)
                     return self.model(**filtered_inputs)
                 else:
                     # Re-raise otros errores de tipo
@@ -148,6 +146,33 @@ class MobileSAMModel(BaseSegmentationModel):
             if hasattr(images, 'to'):
                 images = images.to(self.device).to(model_dtype)
             return self.model(pixel_values=images)
+    
+    def _filter_conflicting_args(self, inputs):
+        """
+        Filtra argumentos que causan conflictos específicos.
+        Solo se llama cuando se detecta un conflicto real.
+        """
+        # Argumentos esenciales que siempre se mantienen
+        essential_args = ['pixel_values', 'original_sizes', 'reshaped_input_sizes']
+        # Argumentos problemáticos que se filtran
+        problematic_args = ['attention_mask', 'position_ids']
+        
+        # Si inputs es un objeto con atributos, extraer como diccionario
+        if hasattr(inputs, '__dict__'):
+            input_dict = {}
+            for key in dir(inputs):
+                if not key.startswith('_') and not callable(getattr(inputs, key)):
+                    input_dict[key] = getattr(inputs, key)
+        else:
+            input_dict = dict(inputs)
+        
+        # Filtrar argumentos problemáticos
+        filtered_dict = {}
+        for key, value in input_dict.items():
+            if key in essential_args or key not in problematic_args:
+                filtered_dict[key] = value
+                
+        return filtered_dict
                 
     def optimize_for_mobile(self) -> None:
         """Optimizaciones específicas para dispositivos móviles."""

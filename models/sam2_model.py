@@ -142,15 +142,27 @@ class SAM2Model(BaseSegmentationModel):
         Filtra argumentos que causan conflictos específicos.
         Solo se llama cuando se detecta un conflicto real.
         """
-        filtered_inputs = {}
-        for key, value in inputs.items():
-            # Mantener argumentos esenciales
-            if key in ['pixel_values', 'original_sizes', 'reshaped_input_sizes']:
-                filtered_inputs[key] = value
-            # Filtrar solo los argumentos problemáticos conocidos
-            elif key not in ['attention_mask', 'position_ids']:
-                filtered_inputs[key] = value
-        return filtered_inputs
+        # Argumentos esenciales que siempre se mantienen
+        essential_args = ['pixel_values', 'original_sizes', 'reshaped_input_sizes']
+        # Argumentos problemáticos que se filtran
+        problematic_args = ['attention_mask', 'position_ids']
+        
+        # Si inputs es un objeto con atributos, extraer como diccionario
+        if hasattr(inputs, '__dict__'):
+            input_dict = {}
+            for key in dir(inputs):
+                if not key.startswith('_') and not callable(getattr(inputs, key)):
+                    input_dict[key] = getattr(inputs, key)
+        else:
+            input_dict = dict(inputs)
+        
+        # Filtrar argumentos problemáticos
+        filtered_dict = {}
+        for key, value in input_dict.items():
+            if key in essential_args or key not in problematic_args:
+                filtered_dict[key] = value
+                
+        return filtered_dict
             
     @classmethod
     def list_available_variants(cls) -> dict:
