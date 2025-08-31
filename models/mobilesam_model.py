@@ -108,6 +108,9 @@ class MobileSAMModel(BaseSegmentationModel):
         if self.model is None:
             raise RuntimeError("Modelo no cargado")
             
+        # Convertir inputs al tipo del modelo para evitar incompatibilidad
+        model_dtype = getattr(self, 'dtype', torch.float32)
+        
         # Procesar inputs si hay procesador disponible
         if self.processor is not None:
             inputs = self.processor(
@@ -116,14 +119,35 @@ class MobileSAMModel(BaseSegmentationModel):
                 input_labels=input_labels,
                 return_tensors="pt"
             ).to(self.device)
-            return self.model(**inputs)
+            
+            # Convertir al tipo del modelo
+            if hasattr(inputs, 'pixel_values'):
+                inputs.pixel_values = inputs.pixel_values.to(model_dtype)
+            
+            # Filtrar argumentos problemáticos que causan conflictos
+            filtered_inputs = {}
+            for key, value in inputs.items():
+                if key in ['pixel_values', 'original_sizes', 'reshaped_input_sizes']:
+                    filtered_inputs[key] = value
+                elif key not in ['attention_mask', 'position_ids']:
+                    filtered_inputs[key] = value
+            
+            # Intentar forward con argumentos completos primero
+            try:
+                return self.model(**inputs)
+            except TypeError as e:
+                if "multiple values" in str(e) and ("attention_mask" in str(e) or "position_ids" in str(e)):
+                    # Solo filtrar si hay conflicto confirmado
+                    print("⚠️  Detectado conflicto de argumentos, aplicando filtrado...")
+                    return self.model(**filtered_inputs)
+                else:
+                    # Re-raise otros errores de tipo
+                    raise e
         else:
             # Forward directo si no hay procesador
-            if hasattr(self.model, 'forward'):
-                return self.model(images)
-            else:
-                # Para modelos que no tienen forward estándar
-                return self.model(pixel_values=images)
+            if hasattr(images, 'to'):
+                images = images.to(self.device).to(model_dtype)
+            return self.model(pixel_values=images)
                 
     def optimize_for_mobile(self) -> None:
         """Optimizaciones específicas para dispositivos móviles."""

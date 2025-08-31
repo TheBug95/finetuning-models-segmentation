@@ -114,12 +114,43 @@ class SAM2Model(BaseSegmentationModel):
             if hasattr(inputs, 'pixel_values'):
                 inputs.pixel_values = inputs.pixel_values.to(model_dtype)
             
-            return self.model(**inputs)
+            # Intentar forward con argumentos completos primero
+            try:
+                return self.model(**inputs)
+            except TypeError as e:
+                if "multiple values" in str(e) and "attention_mask" in str(e):
+                    # Solo filtrar si hay conflicto confirmado de attention_mask
+                    print("⚠️  Detectado conflicto de attention_mask, aplicando filtrado...")
+                    filtered_inputs = self._filter_conflicting_args(inputs)
+                    return self.model(**filtered_inputs)
+                elif "multiple values" in str(e) and "position_ids" in str(e):
+                    # Solo filtrar si hay conflicto confirmado de position_ids
+                    print("⚠️  Detectado conflicto de position_ids, aplicando filtrado...")
+                    filtered_inputs = self._filter_conflicting_args(inputs)
+                    return self.model(**filtered_inputs)
+                else:
+                    # Re-raise otros errores de tipo
+                    raise e
         else:
             # Forward directo si no hay procesador (solo pixel_values)
             if hasattr(images, 'to'):
                 images = images.to(self.device).to(model_dtype)
             return self.model(pixel_values=images)
+            
+    def _filter_conflicting_args(self, inputs):
+        """
+        Filtra argumentos que causan conflictos específicos.
+        Solo se llama cuando se detecta un conflicto real.
+        """
+        filtered_inputs = {}
+        for key, value in inputs.items():
+            # Mantener argumentos esenciales
+            if key in ['pixel_values', 'original_sizes', 'reshaped_input_sizes']:
+                filtered_inputs[key] = value
+            # Filtrar solo los argumentos problemáticos conocidos
+            elif key not in ['attention_mask', 'position_ids']:
+                filtered_inputs[key] = value
+        return filtered_inputs
             
     @classmethod
     def list_available_variants(cls) -> dict:
