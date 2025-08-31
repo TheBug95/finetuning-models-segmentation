@@ -169,9 +169,10 @@ class BaseTrainer(ABC):
         
         for batch_idx, (images, masks) in enumerate(dataloader):
             try:
-                # Mover datos al dispositivo
-                images = images.to(self.model.device)
-                masks = masks.to(self.model.device)
+                # Mover datos al dispositivo y convertir al tipo del modelo
+                model_dtype = getattr(self.model, 'dtype', torch.float32)
+                images = images.to(self.model.device).to(model_dtype)
+                masks = masks.to(self.model.device).to(model_dtype)
                 
                 # Forward pass
                 outputs = self.model.forward(images)

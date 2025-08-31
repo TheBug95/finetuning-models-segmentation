@@ -34,6 +34,7 @@ class BaseSegmentationModel(ABC):
         self.model: Optional[PreTrainedModel] = None
         self.processor = None
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        self.dtype = torch.float32  # Tipo por defecto
         
     @abstractmethod
     def load_model(self) -> None:

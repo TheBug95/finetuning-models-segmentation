@@ -38,11 +38,14 @@ class SAM2Model(BaseSegmentationModel):
     def load_model(self) -> None:
         """Carga el modelo SAM2 desde Hugging Face."""
         try:
+            # Usar float32 por defecto para evitar problemas de tipos mixtos
             self.model = Sam2Model.from_pretrained(
                 self.model_name,
                 cache_dir=self.cache_dir,
-                torch_dtype=torch.float16 if torch.cuda.is_available() else torch.float32
+                torch_dtype=torch.float32
             )
+            # Almacenar el dtype para conversión posterior de datos
+            self.dtype = torch.float32
             print(f"✅ Modelo SAM2 ({self.variant}) cargado desde: {self.model_name}")
         except Exception as e:
             raise RuntimeError(f"Error cargando modelo SAM2: {e}")
@@ -86,6 +89,9 @@ class SAM2Model(BaseSegmentationModel):
         if self.model is None:
             raise RuntimeError("Modelo no cargado")
             
+        # Convertir inputs al tipo del modelo para evitar incompatibilidad
+        model_dtype = getattr(self, 'dtype', torch.float32)
+        
         # Procesar inputs si hay procesador disponible
         if self.processor is not None:
             # Preparar argumentos para el procesador
@@ -103,11 +109,16 @@ class SAM2Model(BaseSegmentationModel):
                 processor_kwargs["input_boxes"] = input_boxes
                 
             inputs = self.processor(**processor_kwargs).to(self.device)
+            
+            # Convertir al tipo del modelo
+            if hasattr(inputs, 'pixel_values'):
+                inputs.pixel_values = inputs.pixel_values.to(model_dtype)
+            
             return self.model(**inputs)
         else:
             # Forward directo si no hay procesador (solo pixel_values)
             if hasattr(images, 'to'):
-                images = images.to(self.device)
+                images = images.to(self.device).to(model_dtype)
             return self.model(pixel_values=images)
             
     @classmethod
