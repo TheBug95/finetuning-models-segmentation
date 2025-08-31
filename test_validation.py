@@ -25,22 +25,22 @@ def test_model_manager():
     """Test model manager functionality without heavy dependencies."""
     print("\nTesting model manager...")
     try:
-        from model_manager import SAMModelManager
-        mgr = SAMModelManager("test_models")
+        from models import SAM2Model, MedSAM2Model, MobileSAMModel
         
-        # Test basic functionality
-        mgr.list_supported()
+        # Test basic model creation
+        sam2 = SAM2Model(variant="tiny")
+        print(f"✅ SAM2Model created: {sam2.model_name}")
         
-        # Test error handling
-        try:
-            mgr.install_repo("nonexistent_model")
-        except ValueError as e:
-            print(f"✅ Error handling works: {e}")
+        medsam2 = MedSAM2Model(variant="default") 
+        print(f"✅ MedSAM2Model created: {medsam2.model_name}")
         
-        print("✅ Model manager working correctly")
+        mobilesam = MobileSAMModel(variant="default")
+        print(f"✅ MobileSAMModel created: {mobilesam.model_name}")
+        
+        print("✅ Model creation working correctly")
         return True
     except Exception as e:
-        print(f"❌ Model manager error: {e}")
+        print(f"❌ Model creation error: {e}")
         return False
 
 def test_dataset_creation():
@@ -72,8 +72,8 @@ def test_project_structure():
     """Test that all required files exist."""
     print("\nTesting project structure...")
     required_files = [
-        "finetune.py",
-        "model_manager.py",
+        "train.py",
+        "benchmark.py", 
         "requirements.txt",
         "README.md",
         "datasets/__init__.py",
@@ -98,8 +98,9 @@ def test_code_syntax():
     """Test that all Python files have valid syntax."""
     print("\nTesting code syntax...")
     python_files = [
-        "model_manager.py",
-        "datasets/__init__.py",
+        "train.py",
+        "benchmark.py",
+        "datasets/__init__.py", 
         "datasets/common.py",
         "datasets/cataract.py",
         "datasets/retinopathy.py",

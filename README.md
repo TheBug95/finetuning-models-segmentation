@@ -297,22 +297,22 @@ etc.) mediante el parámetro `--dataset-root`.
 
 ```bash
 # Fine-tuning baseline (para establecer línea base de comparación)
-python finetune.py --model sam2 --method baseline --dataset cataract --dataset-root /ruta/al/dataset --epochs 5
+python train.py --model sam2 --method baseline --dataset cataract --dataset-root /ruta/al/dataset --epochs 5
 
 # Fine-tuning con LoRA (recomendado para la mayoría de casos)
-python finetune.py --model medsam2 --method lora --dataset retinopathy --dataset-root /ruta/al/dataset --epochs 5 --batch-size 4
+python train.py --model medsam2 --method lora --dataset retinopathy --dataset-root /ruta/al/dataset --epochs 5 --batch-size 4
 
 # Fine-tuning con QLoRA (para GPUs con memoria limitada)
-python finetune.py --model mobilesam2 --method qlora --dataset cataract --dataset-root /ruta/al/dataset --lr 5e-5
+python train.py --model mobilesam2 --method qlora --dataset cataract --dataset-root /ruta/al/dataset --lr 5e-5
 
 # Comparación automática de todos los modelos y métodos
-python compare_models.py --dataset-root /ruta/al/dataset --epochs 3
+python benchmark.py --dataset-root /ruta/al/dataset --epochs 3
 
 # Listar modelos disponibles
-python finetune.py --list-models
+python train.py --list-models
 
 # Ver estado del gestor de modelos
-python finetune.py --show-manager-status
+python train.py --show-manager-status
 ```
 
 ### Parámetros Disponibles
