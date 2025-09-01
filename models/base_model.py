@@ -190,8 +190,11 @@ class BaseSegmentationModel(ABC):
         # Argumentos problemáticos que se filtran
         problematic_args = ['attention_mask', 'position_ids']
 
-        # Si inputs es un objeto con atributos, extraer como diccionario
-        if hasattr(inputs, '__dict__'):
+        # Convertir inputs a diccionario manejando BatchEncoding/BatchFeature
+        if hasattr(inputs, "items"):
+            # Soporta dict y objetos tipo BatchEncoding
+            input_dict = dict(inputs.items())
+        elif hasattr(inputs, '__dict__'):
             input_dict = {}
             for key in dir(inputs):
                 if not key.startswith('_') and not callable(getattr(inputs, key)):
