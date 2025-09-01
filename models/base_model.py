@@ -4,7 +4,7 @@ Define la interfaz común y métodos compartidos.
 """
 
 from abc import ABC, abstractmethod
-from typing import Dict, Any, Optional, Tuple
+from typing import Dict, Any, Optional, Tuple, List
 import torch
 import torch.nn as nn
 from transformers import PreTrainedModel, BitsAndBytesConfig
@@ -95,9 +95,9 @@ class BaseSegmentationModel(ABC):
             param.requires_grad = True
         print(f"✅ Modelo configurado para fine-tuning baseline")
         
-    def _setup_lora_training(self, 
-                           r: int = 16, 
-                           lora_alpha: int = 32, 
+    def _setup_lora_training(self,
+                           r: int = 16,
+                           lora_alpha: int = 32,
                            lora_dropout: float = 0.1,
                            target_modules: Optional[list] = None) -> None:
         """Configura para fine-tuning con LoRA."""
@@ -120,14 +120,60 @@ class BaseSegmentationModel(ABC):
         
         self.model = get_peft_model(self.model, lora_config)
         print(f"✅ Modelo configurado para fine-tuning con LoRA")
-        
+
     def _setup_manual_freezing(self) -> None:
         """Congelamiento manual cuando PEFT no está disponible."""
-        # Congelar todo excepto las últimas capas
-        total_params = list(self.model.parameters())
-        for param in total_params[:-10]:  # Descongelar últimas 10 capas
+        if self.model is None:
+            raise RuntimeError("Modelo no cargado")
+
+        # Congelar todos los parámetros por defecto
+        for param in self.model.parameters():
             param.requires_grad = False
-        print("✅ Congelamiento manual aplicado (últimas 10 capas entrenables)")
+
+        # Identificar capas superiores a mantener entrenables
+        trainable_layers = []
+        for name, module in self._identify_top_layers():
+            for param in module.parameters():
+                param.requires_grad = True
+            trainable_layers.append(name)
+
+        if trainable_layers:
+            printable = ", ".join(trainable_layers)
+            print(
+                f"✅ Congelamiento manual aplicado (capas entrenables: {printable})"
+            )
+        else:
+            print(
+                "⚠️  No se encontraron capas específicas para descongelar. Modelo completamente congelado."
+            )
+
+    def _identify_top_layers(self) -> List[Tuple[str, nn.Module]]:
+        """Obtiene capas superiores para mantener entrenables.
+
+        Actualmente incluye:
+            - Último bloque del vision encoder
+            - El mask decoder completo
+
+        Returns:
+            Lista de tuplas (nombre, módulo)
+        """
+        layers: List[Tuple[str, nn.Module]] = []
+
+        # Último bloque del vision encoder
+        vision_encoder = getattr(self.model, "vision_encoder", None)
+        if vision_encoder is not None and hasattr(vision_encoder, "blocks"):
+            try:
+                last_block = vision_encoder.blocks[-1]
+                layers.append(("vision_encoder.blocks[-1]", last_block))
+            except Exception:
+                pass
+
+        # Mask decoder completo
+        mask_decoder = getattr(self.model, "mask_decoder", None)
+        if mask_decoder is not None:
+            layers.append(("mask_decoder", mask_decoder))
+
+        return layers
         
     @abstractmethod
     def _get_default_lora_targets(self) -> list:
