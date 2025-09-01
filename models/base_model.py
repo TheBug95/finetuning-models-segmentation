@@ -7,7 +7,7 @@ from abc import ABC, abstractmethod
 from typing import Dict, Any, Optional, Tuple
 import torch
 import torch.nn as nn
-from transformers import PreTrainedModel
+from transformers import PreTrainedModel, BitsAndBytesConfig
 
 # Import PEFT con manejo de errores para compatibilidad
 try:
@@ -62,7 +62,30 @@ class BaseSegmentationModel(ABC):
         elif method == "lora":
             self._setup_lora_training(**kwargs)
         elif method == "qlora":
-            self._setup_qlora_training(**kwargs)
+            # Recargar el modelo en 4-bit usando BitsAndBytes
+            if self.model is not None:
+                model_cls = self.model.__class__
+            else:
+                raise RuntimeError("Modelo no cargado. Llama a load_model() primero.")
+
+            bnb_config = BitsAndBytesConfig(load_in_4bit=True)
+            self.model = model_cls.from_pretrained(
+                self.model_name,
+                cache_dir=self.cache_dir,
+                quantization_config=bnb_config,
+                load_in_4bit=True,
+                device_map="auto",
+            )
+            # Actualizar dtype para inputs
+            self.dtype = getattr(bnb_config, "bnb_4bit_compute_dtype", torch.float16)
+
+            # Preparar modelo para entrenamiento en k-bits
+            if PEFT_AVAILABLE:
+                self.model = prepare_model_for_kbit_training(self.model)
+
+            # Aplicar configuración LoRA sobre el modelo cuantizado
+            self._setup_lora_training(**kwargs)
+            print(f"✅ Modelo configurado para fine-tuning con QLoRA")
         else:
             raise ValueError(f"Método no soportado: {method}")
             
@@ -97,17 +120,6 @@ class BaseSegmentationModel(ABC):
         
         self.model = get_peft_model(self.model, lora_config)
         print(f"✅ Modelo configurado para fine-tuning con LoRA")
-        
-    def _setup_qlora_training(self, **kwargs) -> None:
-        """Configura para fine-tuning con QLoRA."""
-        if not PEFT_AVAILABLE:
-            print("❌ PEFT no disponible. Aplicando congelamiento manual...")
-            self._setup_manual_freezing()
-            return
-            
-        self.model = prepare_model_for_kbit_training(self.model)
-        self._setup_lora_training(**kwargs)
-        print(f"✅ Modelo configurado para fine-tuning con QLoRA")
         
     def _setup_manual_freezing(self) -> None:
         """Congelamiento manual cuando PEFT no está disponible."""
