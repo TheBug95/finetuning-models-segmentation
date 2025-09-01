@@ -11,10 +11,14 @@ def test_imports():
     """Test that core imports work correctly."""
     print("Testing basic imports...")
     try:
-        from datasets import get_dataset
-        from datasets.common import build_medical_dataset
-        from datasets.cataract import build_cataract_dataset
-        from datasets.retinopathy import build_retinopathy_dataset
+        from datasets import (
+            get_dataset,
+            create_dataset,
+            list_available_datasets,
+            GenericCocoOrMaskDataset,
+        )
+        from datasets.cataract_dataset import CataractDataset
+        from datasets.retinopathy_dataset import RetinopathyDataset
         print("✅ Dataset imports successful")
         return True
     except Exception as e:
@@ -47,21 +51,20 @@ def test_dataset_creation():
     """Test dataset creation functions."""
     print("\nTesting dataset creation...")
     try:
-        from datasets import get_dataset
-        
+        from datasets import get_dataset, create_dataset
+
         # Test dataset factory function error handling
         try:
             get_dataset("nonexistent", "/fake/path")
         except ValueError as e:
             print(f"✅ Dataset factory error handling works: {e}")
-        
-        # Test build_medical_dataset error handling
-        from datasets.common import build_medical_dataset
+
+        # Test create_dataset error handling with missing path
         try:
-            build_medical_dataset("/nonexistent/path", "test")
-        except ValueError as e:
-            print(f"✅ Medical dataset error handling works: {e}")
-        
+            create_dataset("cataract", "/nonexistent/path")
+        except FileNotFoundError as e:
+            print(f"✅ create_dataset error handling works: {e}")
+
         print("✅ Dataset creation functions working correctly")
         return True
     except Exception as e:
@@ -77,9 +80,9 @@ def test_project_structure():
         "requirements.txt",
         "README.md",
         "datasets/__init__.py",
-        "datasets/common.py",
-        "datasets/cataract.py",
-        "datasets/retinopathy.py",
+        "datasets/generic_dataset.py",
+        "datasets/cataract_dataset.py",
+        "datasets/retinopathy_dataset.py",
     ]
     
     missing_files = []
@@ -101,9 +104,9 @@ def test_code_syntax():
         "train.py",
         "benchmark.py",
         "datasets/__init__.py", 
-        "datasets/common.py",
-        "datasets/cataract.py",
-        "datasets/retinopathy.py",
+        "datasets/generic_dataset.py",
+        "datasets/cataract_dataset.py",
+        "datasets/retinopathy_dataset.py",
     ]
     
     for file_path in python_files:
