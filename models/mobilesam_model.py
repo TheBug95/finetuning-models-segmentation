@@ -38,12 +38,13 @@ class MobileSAMModel(BaseSegmentationModel):
     def load_model(self) -> None:
         """Carga el modelo MobileSAM desde Hugging Face."""
         try:
+            dtype = torch.float16 if torch.cuda.is_available() else torch.float32
             # Intentar cargar como SamModel primero
             try:
                 self.model = SamModel.from_pretrained(
                     self.model_name,
                     cache_dir=self.cache_dir,
-                    torch_dtype=torch.float16 if torch.cuda.is_available() else torch.float32
+                    torch_dtype=dtype
                 )
             except Exception:
                 # Fallback: cargar como AutoModel genérico
@@ -51,9 +52,9 @@ class MobileSAMModel(BaseSegmentationModel):
                     self.model_name,
                     cache_dir=self.cache_dir,
                     trust_remote_code=True,
-                    torch_dtype=torch.float16 if torch.cuda.is_available() else torch.float32
+                    torch_dtype=dtype
                 )
-            
+            self.dtype = dtype
             print(f"✅ Modelo MobileSAM ({self.variant}) cargado desde: {self.model_name}")
         except Exception as e:
             raise RuntimeError(f"Error cargando modelo MobileSAM: {e}")
