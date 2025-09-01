@@ -5,43 +5,20 @@ Test para verificar que la corrección del conflicto de attention_mask funciona.
 
 import torch
 import torch.nn as nn
+from transformers import BatchEncoding
 from models.sam2_model import SAM2Model
 
-class MockBatchEncoding:
-    """Mock que simula el BatchEncoding del procesador SAM2."""
-    
-    def __init__(self):
-        self.pixel_values = torch.randn(1, 3, 256, 256)
-        self.original_sizes = torch.tensor([[256, 256]])
-        self.reshaped_input_sizes = torch.tensor([[256, 256]])
-        self.attention_mask = torch.ones(1, 16, 16)  # Esto causa el conflicto
-        
-    def to(self, device):
-        return self
-        
-    def items(self):
-        return [
-            ('pixel_values', self.pixel_values),
-            ('original_sizes', self.original_sizes),
-            ('reshaped_input_sizes', self.reshaped_input_sizes),
-            ('attention_mask', self.attention_mask),
-        ]
-    
-    # Hacer que funcione como diccionario para **kwargs
-    def __iter__(self):
-        return iter(['pixel_values', 'original_sizes', 'reshaped_input_sizes', 'attention_mask'])
-    
-    def __getitem__(self, key):
-        return getattr(self, key)
-    
-    def keys(self):
-        return ['pixel_values', 'original_sizes', 'reshaped_input_sizes', 'attention_mask']
 
 class MockProcessor:
-    """Mock del procesador SAM2."""
-    
+    """Mock del procesador SAM2 que retorna un BatchEncoding real."""
+
     def __call__(self, **kwargs):
-        return MockBatchEncoding()
+        return BatchEncoding({
+            'pixel_values': torch.randn(1, 3, 256, 256),
+            'original_sizes': torch.tensor([[256, 256]]),
+            'reshaped_input_sizes': torch.tensor([[256, 256]]),
+            'attention_mask': torch.ones(1, 16, 16),  # Esto causa el conflicto
+        })
 
 class MockModel(nn.Module):
     """Mock del modelo SAM2 que simula el conflicto de attention_mask."""
