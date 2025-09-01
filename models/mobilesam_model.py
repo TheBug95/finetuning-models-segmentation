@@ -120,27 +120,27 @@ class MobileSAMModel(BaseSegmentationModel):
                 input_labels=input_labels,
                 return_tensors="pt"
             ).to(self.device)
-            
+
             # Convertir al tipo del modelo
             if hasattr(inputs, 'pixel_values'):
                 inputs.pixel_values = inputs.pixel_values.to(model_dtype)
-            
-            # Intentar forward con argumentos completos primero
+
+            # Filtrado preventivo de argumentos problemáticos
+            conflict_mask = 'attention_mask' in inputs
+            conflict_pos = 'position_ids' in inputs
+            if conflict_mask or conflict_pos:
+                msg = "attention_mask" if conflict_mask else "position_ids"
+                print(f"⚠️  Detectado conflicto de {msg}, aplicando filtrado...")
+                inputs = super()._filter_conflicting_args(inputs)
+
+            # Forward seguro con manejo de errores residual
             try:
                 return self.model(**inputs)
             except TypeError as e:
-                if "multiple values" in str(e) and "attention_mask" in str(e):
-                    # Solo filtrar si hay conflicto confirmado de attention_mask
-                    print("⚠️  Detectado conflicto de attention_mask, aplicando filtrado...")
-                    filtered_inputs = super()._filter_conflicting_args(inputs)
-                    return self.model(**filtered_inputs)
-                elif "multiple values" in str(e) and "position_ids" in str(e):
-                    # Solo filtrar si hay conflicto confirmado de position_ids
-                    print("⚠️  Detectado conflicto de position_ids, aplicando filtrado...")
+                if "multiple values" in str(e) and ("attention_mask" in str(e) or "position_ids" in str(e)):
                     filtered_inputs = super()._filter_conflicting_args(inputs)
                     return self.model(**filtered_inputs)
                 else:
-                    # Re-raise otros errores de tipo
                     raise e
         else:
             # Forward directo si no hay procesador
