@@ -5,11 +5,8 @@ Versión refactorizada usando arquitectura modular y Hugging Face Transformers.
 
 import argparse
 import os
-import sys
 import time
 import json
-from pathlib import Path
-from typing import Dict, Any
 
 import torch
 from torch.utils.data import DataLoader
@@ -307,7 +304,7 @@ def main():
         )
         
         # 4. Entrenar
-        print(f"\n🎯 INICIANDO ENTRENAMIENTO")
+        print("\n🎯 INICIANDO ENTRENAMIENTO")
         print("="*60)
         
         start_time = time.time()
@@ -318,7 +315,7 @@ def main():
         save_training_results(trainer, model, args.output_dir, args)
         
         # 6. Resumen final
-        print(f"\n🎉 ENTRENAMIENTO COMPLETADO EXITOSAMENTE")
+        print("\n🎉 ENTRENAMIENTO COMPLETADO EXITOSAMENTE")
         print("="*60)
         print(f"⏱️  Tiempo total: {end_time - start_time:.2f}s")
         print(f"📈 Mejor loss: {metrics.best_loss:.6f}")
@@ -327,7 +324,7 @@ def main():
         return 0
         
     except Exception as e:
-        print(f"\n❌ ERROR EN EL ENTRENAMIENTO")
+        print("\n❌ ERROR EN EL ENTRENAMIENTO")
         print("="*60)
         print(f"Error: {e}")
         import traceback
